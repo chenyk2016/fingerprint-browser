@@ -21,7 +21,9 @@ export interface BrowserConfig {
     };
     args?: string[];
     userDataDir?: string;
-    [key: string]: any;
+    env?: Record<string, string>;
+    ignoreDefaultArgs?: string[];
+    ignoreHTTPSErrors?: boolean;
   };
   fingerprint?: {
     navigator: {
@@ -41,10 +43,16 @@ export interface BrowserConfig {
     webgl: {
       vendor: string;
       renderer: string;
+      vendorHash?: string;
+      rendererHash?: string;
     };
     audio: {
       sampleRate: number;
       channels: number;
+    };
+    timezone?: {
+      offset: number;
+      zone: string;
     };
   };
 } 

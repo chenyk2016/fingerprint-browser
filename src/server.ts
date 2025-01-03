@@ -104,6 +104,66 @@ async function createServer(): Promise<void> {
     }
   });
 
+  // 获取浏览器配置详情
+  app.get('/api/browsers/:configName/config', (req: Request, res: Response) => {
+    const { configName } = req.params;
+    
+    try {
+      const config = customBrowserConfigs[configName];
+      if (!config) {
+        return res.status(404).json({ error: 'Browser configuration not found' });
+      }
+
+      res.json(config);
+    } catch (error) {
+      console.error(`Error getting browser config ${configName}:`, error);
+      res.status(500).json({ error: 'Failed to get browser configuration' });
+    }
+  });
+
+  // 更新浏览器配置
+  app.put('/api/browsers/:configName/config', async (req: Request, res: Response) => {
+    const { configName } = req.params;
+    const updatedConfig: BrowserConfig = req.body;
+    
+    try {
+      // 检查配置是否存在
+      if (!customBrowserConfigs[configName]) {
+        return res.status(404).json({ error: 'Browser configuration not found' });
+      }
+
+      // 验证配置
+      if (!updatedConfig.name || !updatedConfig.options) {
+        return res.status(400).json({ error: 'Invalid configuration' });
+      }
+
+      // 如果浏览器正在运行，不允许更新配置
+      if (browserManager.isBrowserRunning(configName)) {
+        return res.status(400).json({ error: 'Cannot update configuration while browser is running' });
+      }
+
+      // 保持用户数据目录不变
+      const userDataDir = customBrowserConfigs[configName].options.userDataDir;
+      
+      // 更新配置
+      customBrowserConfigs[configName] = {
+        ...updatedConfig,
+        options: {
+          ...updatedConfig.options,
+          userDataDir
+        }
+      };
+
+      // 保存配置到文件
+      await saveConfigs(customBrowserConfigs);
+
+      res.json({ message: 'Browser configuration updated successfully' });
+    } catch (error) {
+      console.error(`Error updating browser config ${configName}:`, error);
+      res.status(500).json({ error: 'Failed to update browser configuration' });
+    }
+  });
+
   // 添加新的浏览器配置
   app.post('/api/browsers/:configName', async (req: Request, res: Response) => {
     const { configName } = req.params;

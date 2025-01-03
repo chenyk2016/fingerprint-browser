@@ -1,54 +1,37 @@
 import React, { useState } from 'react';
-
-interface Browser {
-  configName: string;
-  browserType: string;
-  headless: boolean;
-  status?: string;
-}
+import BrowserConfigDetail from './BrowserConfigDetail';
+import { Browser, BrowserConfig } from '../types/browser';
 
 interface BrowserListProps {
   browsers: Browser[];
-  onDelete: (configName: string) => void;
+  onDelete: (configName: string) => Promise<void>;
   onStart: (configName: string) => Promise<void>;
   onStop: (configName: string) => Promise<void>;
+  onUpdateConfig: (configName: string, config: BrowserConfig) => Promise<void>;
 }
 
-function BrowserList({ browsers, onDelete, onStart, onStop }: BrowserListProps): React.ReactElement {
-  const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
+function BrowserList({ browsers, onDelete, onStart, onStop, onUpdateConfig }: BrowserListProps): React.ReactElement {
+  const [selectedConfig, setSelectedConfig] = useState<(BrowserConfig & { configName: string }) | null>(null);
 
-  const handleStart = async (configName: string) => {
+  const handleConfigClick = async (configName: string): Promise<void> => {
     try {
-      setLoadingStates(prev => ({ ...prev, [configName]: true }));
-      await onStart(configName);
+      const response = await fetch(`/api/browsers/${configName}/config`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch config');
+      }
+      const config = await response.json() as BrowserConfig;
+      setSelectedConfig({ configName, ...config });
     } catch (error) {
-      console.error('Failed to start browser:', error);
-    } finally {
-      setLoadingStates(prev => ({ ...prev, [configName]: false }));
+      console.error('Error fetching config:', error);
     }
   };
 
-  const handleStop = async (configName: string) => {
+  const handleSaveConfig = async (configName: string, updatedConfig: BrowserConfig): Promise<void> => {
     try {
-      setLoadingStates(prev => ({ ...prev, [configName]: true }));
-      await onStop(configName);
+      await onUpdateConfig(configName, updatedConfig);
+      setSelectedConfig(null);
     } catch (error) {
-      console.error('Failed to stop browser:', error);
-    } finally {
-      setLoadingStates(prev => ({ ...prev, [configName]: false }));
-    }
-  };
-
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'running':
-        return 'text-green-600';
-      case 'stopped':
-        return 'text-gray-600';
-      case 'error':
-        return 'text-red-600';
-      default:
-        return 'text-gray-500';
+      console.error('Error updating config:', error);
     }
   };
 
@@ -59,7 +42,8 @@ function BrowserList({ browsers, onDelete, onStart, onStop }: BrowserListProps):
         {browsers.map((browser) => (
           <div
             key={browser.configName}
-            className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+            className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
+            onClick={() => handleConfigClick(browser.configName)}
           >
             <div>
               <h3 className="font-medium">{browser.configName}</h3>
@@ -67,45 +51,33 @@ function BrowserList({ browsers, onDelete, onStart, onStop }: BrowserListProps):
                 <p>类型: {browser.browserType}</p>
                 <p>无头模式: {browser.headless ? '是' : '否'}</p>
                 <p className={getStatusColor(browser.status)}>
-                  状态: {loadingStates[browser.configName] ? '处理中...' : (browser.status || '未启动')}
+                  状态: {browser.status || '未启动'}
                 </p>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
               {(!browser.status || browser.status === 'stopped') && (
                 <button
-                  onClick={() => handleStart(browser.configName)}
-                  disabled={loadingStates[browser.configName]}
-                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                    loadingStates[browser.configName]
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'text-green-600 hover:bg-green-100'
-                  }`}
+                  onClick={() => onStart(browser.configName)}
+                  className="px-3 py-1 text-sm text-green-600 hover:bg-green-100 rounded-md"
+                  type="button"
                 >
-                  {loadingStates[browser.configName] ? '启动中...' : '启动'}
+                  启动
                 </button>
               )}
               {browser.status === 'running' && (
                 <button
-                  onClick={() => handleStop(browser.configName)}
-                  disabled={loadingStates[browser.configName]}
-                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                    loadingStates[browser.configName]
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'text-yellow-600 hover:bg-yellow-100'
-                  }`}
+                  onClick={() => onStop(browser.configName)}
+                  className="px-3 py-1 text-sm text-yellow-600 hover:bg-yellow-100 rounded-md"
+                  type="button"
                 >
-                  {loadingStates[browser.configName] ? '关闭中...' : '关闭'}
+                  关闭
                 </button>
               )}
               <button
                 onClick={() => onDelete(browser.configName)}
-                disabled={loadingStates[browser.configName]}
-                className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                  loadingStates[browser.configName]
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'text-red-600 hover:bg-red-100'
-                }`}
+                className="px-3 py-1 text-sm text-red-600 hover:bg-red-100 rounded-md"
+                type="button"
               >
                 删除
               </button>
@@ -116,8 +88,29 @@ function BrowserList({ browsers, onDelete, onStart, onStop }: BrowserListProps):
           <p className="text-gray-500 text-center py-4">暂无浏览器环境</p>
         )}
       </div>
+
+      {selectedConfig && (
+        <BrowserConfigDetail
+          config={selectedConfig}
+          onClose={() => setSelectedConfig(null)}
+          onSave={(updatedConfig) => handleSaveConfig(selectedConfig.configName, updatedConfig)}
+        />
+      )}
     </div>
   );
+}
+
+function getStatusColor(status: string | undefined): string {
+  switch (status) {
+    case 'running':
+      return 'text-green-600';
+    case 'stopped':
+      return 'text-gray-600';
+    case 'error':
+      return 'text-red-600';
+    default:
+      return 'text-gray-500';
+  }
 }
 
 export default BrowserList; 
