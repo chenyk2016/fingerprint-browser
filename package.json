@@ -2,32 +2,61 @@
   "name": "multi-browser",
   "version": "1.0.0",
   "description": "Multi-browser automation with Puppeteer",
-  "main": "src/index.js",
+  "main": "dist/server/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "test": "node src/index.js --test",
-    "clean": "rm -rf profiles/*"
+    "start": "ts-node -P tsconfig.server.json src/index.ts",
+    "dev": "nodemon",
+    "test": "ts-node -P tsconfig.server.json src/index.ts --test",
+    "clean": "rm -rf dist/*",
+    "server": "ts-node -P tsconfig.server.json src/server.ts",
+    "server:dev": "nodemon -P tsconfig.server.json src/server.ts",
+    "server:build": "tsc -P tsconfig.server.json",
+    "client:dev": "vite src/client",
+    "client:build": "tsc -P src/client/tsconfig.json && vite build src/client",
+    "client:preview": "vite preview src/client",
+    "dev:all": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "build": "npm run server:build && npm run client:build",
+    "type-check": "tsc -P tsconfig.server.json --noEmit && tsc -P src/client/tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@tailwindcss/forms": "^0.5.9",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "dotenv": "^16.4.0",
+    "express": "^4.18.2",
+    "joi": "^17.12.0",
+    "postcss": "^8.4.49",
     "puppeteer": "^21.7.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "winston": "^3.11.0",
-    "joi": "^17.12.0",
-    "dotenv": "^16.4.0"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwindcss": "^3.4.17",
+    "uuid": "^9.0.1",
+    "vite": "^5.0.7",
+    "winston": "^3.11.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.3"
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/uuid": "^9.0.7",
+    "concurrently": "^9.1.2",
+    "nodemon": "^3.0.3",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.3.0"
   },
   "nodemonConfig": {
-    "watch": ["src"],
-    "ext": "js,json",
-    "ignore": ["src/logs/*", "src/data/*"],
-    "delay": "1000"
-  },
-  "puppeteer": {
-    "downloadHost": "https://npmmirror.com/mirrors",
-    "chromium_download_host": "https://npmmirror.com/mirrors/chrome-for-testing"
+    "watch": [
+      "src"
+    ],
+    "ext": "ts,tsx,js,jsx,json",
+    "ignore": [
+      "src/logs/*",
+      "src/data/*"
+    ],
+    "delay": "1000",
+    "exec": "ts-node -P tsconfig.server.json"
   }
 }

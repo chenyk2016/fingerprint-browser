@@ -1,9 +1,10 @@
-const BrowserManager = require('./browsers/browser-manager');
-const browserConfigs = require('./config/browser-config');
+import { BrowserManager } from './browsers/browser-manager';
+import browserConfigs from './config/browser-config';
+import { BrowserConfig } from './types/browser';
 
-let browserManager = null;
+let browserManager: BrowserManager | null = null;
 
-async function cleanup() {
+async function cleanup(): Promise<void> {
   if (browserManager) {
     console.log('\n正在关闭浏览器...');
     try {
@@ -20,16 +21,16 @@ process.on('SIGINT', cleanup);  // Ctrl+C
 process.on('SIGTERM', cleanup); // kill
 process.on('SIGUSR2', cleanup); // nodemon restart
 
-async function main() {
+async function main(): Promise<void> {
   browserManager = new BrowserManager();
 
   // 添加进程异常处理
-  process.on('uncaughtException', async (error) => {
+  process.on('uncaughtException', async (error: Error) => {
     console.error('未捕获的异常:', error);
     await cleanup();
   });
 
-  process.on('unhandledRejection', async (reason, promise) => {
+  process.on('unhandledRejection', async (reason: unknown, promise: Promise<unknown>) => {
     console.error('未处理的 Promise 拒绝:', reason);
     await cleanup();
   });
@@ -40,7 +41,7 @@ async function main() {
       throw new Error('浏览器配置为空');
     }
 
-    for (const [browserType, config] of Object.entries(browserConfigs)) {
+    for (const [browserType, config] of Object.entries<BrowserConfig>(browserConfigs)) {
       // 验证必要的配置字段
       if (!config.name || !config.options) {
         throw new Error(`浏览器 ${browserType} 的配置无效`);
