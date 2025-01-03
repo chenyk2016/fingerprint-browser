@@ -15,7 +15,7 @@ interface Browser {
 
 // 配置文件路径
 const CONFIG_FILE_PATH = path.join(__dirname, '../data/browser-configs.json');
-const PROFILES_BASE_DIR = path.join(__dirname, '../../profiles');
+const PROFILES_BASE_DIR = path.join(process.cwd(), 'profiles');
 
 // 确保配置目录存在
 async function ensureConfigDir() {
@@ -88,9 +88,48 @@ async function createServer(): Promise<void> {
   const browserStatuses: Record<string, string> = {};
   const customBrowserConfigs: Record<string, BrowserConfig> = await loadSavedConfigs();
 
+  // 更新浏览器状态
+  function updateBrowserStatus(configName: string, status: string) {
+    console.log(`Updating browser status: ${configName} -> ${status}`);
+    browserStatuses[configName] = status;
+  }
+
+  // 监听浏览器事件
+  browserManager.on('browserClosed', (configName: string) => {
+    console.log(`Browser closed event received: ${configName}`);
+    updateBrowserStatus(configName, 'stopped');
+  });
+
+  browserManager.on('browserError', (configName: string, error: Error) => {
+    console.error(`Browser error event received: ${configName}`, error);
+    updateBrowserStatus(configName, 'error');
+  });
+
+  // 定期检查浏览器状态
+  setInterval(() => {
+
+    Object.keys(customBrowserConfigs).forEach(configName => {
+      const isRunning = browserManager.isBrowserRunning(configName);
+      const currentStatus = browserStatuses[configName];
+      if (isRunning && currentStatus !== 'running') {
+        updateBrowserStatus(configName, 'running');
+      } else if (!isRunning && currentStatus === 'running') {
+        updateBrowserStatus(configName, 'stopped');
+      }
+    });
+  }, 5000);
+
   // API routes
   app.get('/api/browsers', (_req: Request, res: Response) => {
     try {
+      // 在返回状态前检查一次所有浏览器的状态
+      Object.keys(customBrowserConfigs).forEach(configName => {
+        const isRunning = browserManager.isBrowserRunning(configName);
+        if (!isRunning && browserStatuses[configName] === 'running') {
+          updateBrowserStatus(configName, 'stopped');
+        }
+      });
+
       const browsers: Browser[] = Object.entries(customBrowserConfigs).map(([configName, config]) => ({
         configName,
         browserType: config.name,
@@ -99,8 +138,8 @@ async function createServer(): Promise<void> {
       }));
       res.json(browsers);
     } catch (error) {
-      console.error('Error reading browser configs:', error);
-      res.status(500).json({ error: 'Failed to read browser configurations' });
+      console.error('Error getting browsers:', error);
+      res.status(500).json({ error: 'Failed to get browsers' });
     }
   });
 
@@ -189,12 +228,6 @@ async function createServer(): Promise<void> {
         options: {
           ...config.options,
           userDataDir,
-          // 添加额外的隔离选项
-          env: {
-            ...process.env,
-            CHROME_CONFIG_NAME: configName,
-            CHROME_PROFILE_PATH: userDataDir
-          }
         }
       };
 
@@ -208,55 +241,53 @@ async function createServer(): Promise<void> {
     }
   });
 
+  // 启动浏览器
   app.post('/api/browsers/:configName/start', async (req: Request, res: Response) => {
     const { configName } = req.params;
-    
     try {
-      const config = customBrowserConfigs[configName];
-      if (!config) {
-        return res.status(404).json({ error: 'Browser configuration not found' });
-      }
-
       if (browserManager.isBrowserRunning(configName)) {
         return res.status(400).json({ error: 'Browser is already running' });
       }
 
-      // 确保用户数据目录存在
-      await ensureProfileDir(configName);
+      updateBrowserStatus(configName, 'starting');
+      const config = customBrowserConfigs[configName];
+      if (!config) {
+        throw new Error('Browser config not found');
+      }
 
-      await browserManager.launchBrowser(
-        configName,
-        config.options,
-        config.fingerprint
-      );
-      
-      browserStatuses[configName] = 'running';
-      res.json({ message: 'Browser started successfully', status: 'running' });
+      const userDataDir = await ensureProfileDir(configName);
+      await browserManager.launchBrowser(configName, {
+        ...config,
+        options: {
+          ...config.options,
+          userDataDir
+        }
+      });
+
+      updateBrowserStatus(configName, 'running');
+      res.json({ status: 'success' });
     } catch (error) {
       console.error(`Error starting browser ${configName}:`, error);
-      browserStatuses[configName] = 'error';
+      updateBrowserStatus(configName, 'error');
       res.status(500).json({ error: 'Failed to start browser' });
     }
   });
 
+  // 停止浏览器
   app.post('/api/browsers/:configName/stop', async (req: Request, res: Response) => {
     const { configName } = req.params;
-    
     try {
-      if (!customBrowserConfigs[configName]) {
-        return res.status(404).json({ error: 'Browser configuration not found' });
-      }
-
       if (!browserManager.isBrowserRunning(configName)) {
         return res.status(400).json({ error: 'Browser is not running' });
       }
 
+      updateBrowserStatus(configName, 'stopping');
       await browserManager.stopBrowser(configName);
-      browserStatuses[configName] = 'stopped';
-      res.json({ message: 'Browser stopped successfully', status: 'stopped' });
+      updateBrowserStatus(configName, 'stopped');
+      res.json({ status: 'success' });
     } catch (error) {
       console.error(`Error stopping browser ${configName}:`, error);
-      browserStatuses[configName] = 'error';
+      updateBrowserStatus(configName, 'error');
       res.status(500).json({ error: 'Failed to stop browser' });
     }
   });

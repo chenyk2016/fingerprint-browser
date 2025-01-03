@@ -15,10 +15,7 @@ export interface BrowserConfig {
   name: string;
   options: {
     headless: boolean;
-    defaultViewport?: {
-      width: number;
-      height: number;
-    };
+    defaultViewport?: null;
     args?: string[];
     userDataDir?: string;
     env?: Record<string, string>;

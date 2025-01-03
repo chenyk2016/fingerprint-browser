@@ -11,7 +11,7 @@ interface ScreenSize {
 function App(): React.ReactElement {
   const [browsers, setBrowsers] = useState<Browser[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [screenSize, setScreenSize] = useState<ScreenSize>({ width: 1920, height: 1080 });
+  const [, setScreenSize] = useState<ScreenSize>({ width: 1920, height: 1080 });
 
   useEffect(() => {
     fetchBrowsers();
@@ -20,6 +20,12 @@ function App(): React.ReactElement {
       width: window.screen.width || 1920,
       height: window.screen.height || 1080
     });
+
+    // 设置定期刷新
+    const intervalId = setInterval(fetchBrowsers, 5000);
+
+    // 清理函数
+    return () => clearInterval(intervalId);
   }, []);
 
   const fetchBrowsers = async (): Promise<void> => {
@@ -43,64 +49,31 @@ function App(): React.ReactElement {
       const config: BrowserConfig = {
         name: browserData.browserType,
         options: {
+          // 是否以无头模式运行浏览器
           headless: browserData.headless,
-          defaultViewport: {
-            width: screenSize.width,
-            height: screenSize.height - 100
-          },
+          // 禁用默认视口大小限制
+          defaultViewport: null,
           args: [
+            // 禁用通知提示
             '--disable-notifications',
-            '--disable-blink-features=AutomationControlled',
-            '--disable-web-security',
+            // 禁用自动化控制检测
+            '--disable-blink-features=AutomationControlled', 
+            // 禁用沙箱模式,提高稳定性
             '--no-sandbox',
+            // 禁用setuid沙箱
             '--disable-setuid-sandbox',
-            '--lang=zh-CN',
-            `--window-size=${screenSize.width},${screenSize.height}`,
+            // 设置远程调试端口
             `--remote-debugging-port=${remoteDebuggingPort}`,
-            '--disable-background-networking',
-            '--disable-default-apps',
+            // 禁用浏览器扩展
             '--disable-extensions',
-            '--disable-sync',
-            '--disable-translate',
-            '--metrics-recording-only',
-            '--no-first-run',
-            '--safebrowsing-disable-auto-update',
-            `--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36`,
-            '--password-store=basic'
+            // 设置User-Agent
+            `--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36`
           ],
+          // 忽略默认的自动化参数
           ignoreDefaultArgs: ['--enable-automation'],
+          // 忽略HTTPS证书错误
           ignoreHTTPSErrors: true
         },
-        fingerprint: {
-          navigator: {
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            platform: 'Win32',
-            language: 'zh-CN',
-            languages: ['zh-CN', 'zh', 'en-US'],
-            hardwareConcurrency: Math.floor(Math.random() * (16 - 4 + 1) + 4), // 随机 4-16 核
-            deviceMemory: [2, 4, 8, 16][Math.floor(Math.random() * 4)] // 随机内存大小
-          },
-          screen: {
-            width: screenSize.width,
-            height: screenSize.height,
-            colorDepth: 24,
-            pixelDepth: 24
-          },
-          webgl: {
-            vendor: 'Google Inc.',
-            renderer: 'ANGLE (AMD Radeon RX 580 Direct3D11 vs_5_0 ps_5_0)',
-            vendorHash: Math.random().toString(36).substring(7),
-            rendererHash: Math.random().toString(36).substring(7)
-          },
-          audio: {
-            sampleRate: [44100, 48000][Math.floor(Math.random() * 2)],
-            channels: [2, 4, 6][Math.floor(Math.random() * 3)]
-          },
-          timezone: {
-            offset: -new Date().getTimezoneOffset(),
-            zone: Intl.DateTimeFormat().resolvedOptions().timeZone
-          }
-        }
       };
 
       const response = await fetch(`/api/browsers/${browserData.configName}`, {
@@ -127,15 +100,12 @@ function App(): React.ReactElement {
   const handleStartBrowser = async (configName: string): Promise<void> => {
     try {
       const response = await fetch(`/api/browsers/${configName}/start`, {
-        method: 'POST',
+        method: 'POST'
       });
-      if (response.ok) {
-        await fetchBrowsers();
-        setError(null);
-      } else {
-        const error = await response.json();
-        throw new Error(error.error || '启动浏览器失败');
+      if (!response.ok) {
+        throw new Error('启动浏览器失败');
       }
+      await fetchBrowsers();
     } catch (error) {
       console.error('Error starting browser:', error);
       setError(error instanceof Error ? error.message : '启动浏览器失败');
@@ -145,18 +115,15 @@ function App(): React.ReactElement {
   const handleStopBrowser = async (configName: string): Promise<void> => {
     try {
       const response = await fetch(`/api/browsers/${configName}/stop`, {
-        method: 'POST',
+        method: 'POST'
       });
-      if (response.ok) {
-        await fetchBrowsers();
-        setError(null);
-      } else {
-        const error = await response.json();
-        throw new Error(error.error || '停止浏览器失败');
+      if (!response.ok) {
+        throw new Error('关闭浏览器失败');
       }
+      await fetchBrowsers();
     } catch (error) {
       console.error('Error stopping browser:', error);
-      setError(error instanceof Error ? error.message : '停止浏览器失败');
+      setError(error instanceof Error ? error.message : '关闭浏览器失败');
     }
   };
 

@@ -1,97 +1,23 @@
 {
-  "chrome": {
-    "name": "Chrome",
-    "options": {
-      "headless": false,
-      "defaultViewport": {
-        "width": 1440,
-        "height": 800
-      },
-      "args": [
-        "--disable-notifications",
-        "--disable-blink-features=AutomationControlled",
-        "--disable-web-security",
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--lang=zh-CN"
-      ],
-      "userDataDir": "/Users/chen/Desktop/workspace/seven-ai/env-browser/profiles/chrome"
-    },
-    "fingerprint": {
-      "navigator": {
-        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "platform": "Win32",
-        "language": "zh-CN",
-        "languages": [
-          "zh-CN",
-          "zh",
-          "en-US"
-        ],
-        "hardwareConcurrency": 8,
-        "deviceMemory": 8
-      },
-      "screen": {
-        "width": 1440,
-        "height": 900,
-        "colorDepth": 24,
-        "pixelDepth": 24
-      },
-      "webgl": {
-        "vendor": "Google Inc. (NVIDIA)",
-        "renderer": "ANGLE (NVIDIA, NVIDIA GeForce GTX 1660 SUPER Direct3D11 vs_5_0 ps_5_0)"
-      },
-      "audio": {
-        "sampleRate": 44100,
-        "channels": 2
-      }
-    }
-  },
-  "小柒的花田": {
+  "test1": {
     "name": "chrome",
     "options": {
       "headless": false,
-      "defaultViewport": {
-        "width": 1920,
-        "height": 980
-      },
+      "defaultViewport": null,
       "args": [
         "--disable-notifications",
         "--disable-blink-features=AutomationControlled",
-        "--disable-web-security",
         "--no-sandbox",
         "--disable-setuid-sandbox",
-        "--lang=zh-CN",
-        "--window-size=1920,1080"
+        "--remote-debugging-port=9429",
+        "--disable-extensions",
+        "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
       ],
-      "userDataDir": "/Users/chen/Desktop/workspace/seven-ai/profiles/小柒的花田"
-    },
-    "fingerprint": {
-      "navigator": {
-        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "platform": "Win32",
-        "language": "zh-CN",
-        "languages": [
-          "zh-CN",
-          "zh",
-          "en-US"
-        ],
-        "hardwareConcurrency": 8,
-        "deviceMemory": 8
-      },
-      "screen": {
-        "width": 1920,
-        "height": 1080,
-        "colorDepth": 24,
-        "pixelDepth": 24
-      },
-      "webgl": {
-        "vendor": "Google Inc. (NVIDIA)",
-        "renderer": "ANGLE (NVIDIA, NVIDIA GeForce GTX 1660 SUPER Direct3D11 vs_5_0 ps_5_0)"
-      },
-      "audio": {
-        "sampleRate": 44100,
-        "channels": 2
-      }
+      "ignoreDefaultArgs": [
+        "--enable-automation"
+      ],
+      "ignoreHTTPSErrors": true,
+      "userDataDir": "/Users/chen/Desktop/workspace/seven-ai/env-browser/profiles/test1"
     }
   }
 }

@@ -2,7 +2,7 @@
   "name": "multi-browser",
   "version": "1.0.0",
   "description": "Multi-browser automation with Puppeteer",
-  "main": "dist/server/index.js",
+  "main": "src/electron/main.js",
   "scripts": {
     "start": "ts-node -P tsconfig.server.json src/index.ts",
     "dev": "nodemon",
@@ -16,7 +16,10 @@
     "client:preview": "vite preview src/client",
     "dev:all": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
     "build": "npm run server:build && npm run client:build",
-    "type-check": "tsc -P tsconfig.server.json --noEmit && tsc -P src/client/tsconfig.json --noEmit"
+    "package": "npm run build && node scripts/package.js",
+    "package:exe": "npm run build && electron-builder",
+    "type-check": "tsc -P tsconfig.server.json --noEmit && tsc -P src/client/tsconfig.json --noEmit",
+    "electron:start": "electron ."
   },
   "dependencies": {
     "@tailwindcss/forms": "^0.5.9",
@@ -38,12 +41,18 @@
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
+    "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@types/uuid": "^9.0.7",
     "concurrently": "^9.1.2",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "fs-extra": "^11.2.0",
+    "nexe": "^4.0.0-rc.6",
     "nodemon": "^3.0.3",
+    "pkg": "^5.8.1",
     "ts-node": "^10.9.0",
     "typescript": "^5.3.0"
   },
@@ -58,5 +67,25 @@
     ],
     "delay": "1000",
     "exec": "ts-node -P tsconfig.server.json"
+  },
+  "build": {
+    "appId": "com.multi-browser.app",
+    "productName": "Multi Browser",
+    "directories": {
+      "output": "dist-app"
+    },
+    "files": [
+      "dist/**/*",
+      "src/electron/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   }
 }
