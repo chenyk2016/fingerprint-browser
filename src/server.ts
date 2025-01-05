@@ -1,3 +1,5 @@
+// 需要适配electron,fs的一些操作失败了
+
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs/promises';
