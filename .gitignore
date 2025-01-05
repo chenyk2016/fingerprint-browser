@@ -1,7 +1,5 @@
 # Dependencies
 node_modules/
-package-lock.json
-yarn.lock
 
 # Logs
 logs
@@ -31,7 +29,6 @@ coverage
 *.swp
 *.swo
 .DS_Store
-.env
 
 # Debug
 .node-debug/
