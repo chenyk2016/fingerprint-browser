@@ -4,8 +4,6 @@
   "description": "Multi-browser automation with Puppeteer",
   "main": "src/electron/main.js",
   "scripts": {
-    "start": "ts-node -P tsconfig.server.json src/index.ts",
-    "dev": "nodemon",
     "test": "ts-node -P tsconfig.server.json src/index.ts --test",
     "clean": "rm -rf dist/*",
     "server": "ts-node -P tsconfig.server.json src/server.ts",
@@ -14,12 +12,12 @@
     "client:dev": "vite src/client",
     "client:build": "tsc -P src/client/tsconfig.json && vite build src/client",
     "client:preview": "vite preview src/client",
-    "dev:all": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
     "build": "npm run server:build && npm run client:build",
     "package": "npm run build && node scripts/package.js",
     "package:exe": "npm run build && electron-builder",
     "type-check": "tsc -P tsconfig.server.json --noEmit && tsc -P src/client/tsconfig.json --noEmit",
-    "electron:start": "electron ."
+    "electron:start": "npm run server:build && concurrently \"node dist/server/server.js\" \"wait-on http://localhost:3003 && electron .\"",
+    "electron:dev": "cross-env NODE_ENV=development concurrently \"npm run server:dev\" \"wait-on http://localhost:3003 && electron .\""
   },
   "dependencies": {
     "@tailwindcss/forms": "^0.5.9",
@@ -47,6 +45,7 @@
     "@types/react-dom": "^18.2.0",
     "@types/uuid": "^9.0.7",
     "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
     "electron": "^33.2.1",
     "electron-builder": "^25.1.8",
     "fs-extra": "^11.2.0",
@@ -54,7 +53,8 @@
     "nodemon": "^3.0.3",
     "pkg": "^5.8.1",
     "ts-node": "^10.9.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "wait-on": "^7.2.0"
   },
   "nodemonConfig": {
     "watch": [

@@ -5,6 +5,10 @@ import { createServer as createViteServer } from 'vite';
 import browserConfigs from './config/browser-config';
 import { BrowserManager } from './browsers/browser-manager';
 import { BrowserConfig } from './types/browser';
+import dotenv from 'dotenv';
+
+// 加载环境变量
+dotenv.config();
 
 interface Browser {
   configName: string;
@@ -72,17 +76,48 @@ async function saveConfigs(configs: Record<string, BrowserConfig>): Promise<void
 
 async function createServer(): Promise<void> {
   const app = express();
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 3003;
+  const isDev = process.env.NODE_ENV === 'development';
+  
+  // 确定项目根目录和客户端目录
+  const ROOT_DIR = process.cwd();
+  const CLIENT_DEV_DIR = path.join(ROOT_DIR, 'src/client');
+  const CLIENT_DIST_DIR = path.join(ROOT_DIR, 'dist/client');
+
+  // 日志输出当前环境和路径
+  console.log('Environment:', process.env.NODE_ENV);
+  console.log('Root directory:', ROOT_DIR);
+  console.log('Client dev directory:', CLIENT_DEV_DIR);
+  console.log('Client dist directory:', CLIENT_DIST_DIR);
+
+  // 检查客户端目录是否存在
+  try {
+    if (isDev) {
+      await fs.access(CLIENT_DEV_DIR);
+      console.log('Client dev directory exists');
+    } else {
+      await fs.access(CLIENT_DIST_DIR);
+      console.log('Client dist directory exists');
+    }
+  } catch (error) {
+    console.error('Error accessing client directory:', error);
+    throw new Error('Client directory not found');
+  }
+
   const browserManager = new BrowserManager();
 
-  // Create Vite server in middleware mode
-  const vite = await createViteServer({
-    server: { middlewareMode: true },
-    appType: 'spa',
-    root: path.join(__dirname, 'client')
-  });
-
+  // 使用JSON中间件
   app.use(express.json());
+
+  // Create Vite server in middleware mode for development
+  let vite: any;
+  if (isDev) {
+    vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+      root: CLIENT_DEV_DIR
+    });
+  }
 
   // Track browser statuses and configs
   const browserStatuses: Record<string, string> = {};
@@ -107,7 +142,6 @@ async function createServer(): Promise<void> {
 
   // 定期检查浏览器状态
   setInterval(() => {
-
     Object.keys(customBrowserConfigs).forEach(configName => {
       const isRunning = browserManager.isBrowserRunning(configName);
       const currentStatus = browserStatuses[configName];
@@ -336,30 +370,50 @@ async function createServer(): Promise<void> {
     process.exit(0);
   });
 
-  // Use vite's connect instance as middleware
-  app.use(vite.middlewares);
+  // 在API路由之后，添加静态文件服务和开发服务器中间件
+  if (isDev && vite) {
+    // Use vite's connect instance as middleware in development
+    app.use(vite.middlewares);
+  } else {
+    // Serve static files in production
+    console.log('Serving static files from:', CLIENT_DIST_DIR);
+    app.use(express.static(CLIENT_DIST_DIR));
+  }
 
-  // Serve static files for production
-  app.use(express.static(path.join(__dirname, 'client/dist')));
-
-  // Handle all other routes
-  app.get('*', (req: Request, res: Response, next: NextFunction) => {
-    if (req.path.startsWith('/api')) {
-      next();
-      return;
+  // Handle all other routes - 放在最后
+  app.get('*', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (isDev && vite) {
+        // Let Vite handle the request in development
+        vite.middlewares.handle(req, res, next);
+      } else {
+        // Serve index.html in production
+        const indexHtmlPath = path.join(CLIENT_DIST_DIR, 'index.html');
+        console.log('Serving index.html from:', indexHtmlPath);
+        
+        try {
+          await fs.access(indexHtmlPath);
+          res.sendFile(indexHtmlPath);
+        } catch (error) {
+          console.error('Error accessing index.html:', error);
+          res.status(404).send('index.html not found');
+        }
+      }
+    } catch (error) {
+      console.error('Error handling route:', error);
+      next(error);
     }
+  });
 
-    // For development, let Vite handle the request
-    if (process.env.NODE_ENV === 'development') {
-      vite.middlewares.handle(req, res, next);
-    } else {
-      // For production, serve the built index.html
-      res.sendFile(path.join(__dirname, 'client/dist/index.html'));
-    }
+  // Error handling middleware
+  app.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
+    console.error('Server error:', err);
+    res.status(500).json({ error: 'Internal server error' });
   });
 
   app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
+    console.log(`Mode: ${isDev ? 'development' : 'production'}`);
   });
 }
 

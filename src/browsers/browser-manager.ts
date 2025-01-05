@@ -25,18 +25,27 @@ export class BrowserManager extends EventEmitter {
       }
 
       const browser = await puppeteer.launch(config.options);
-      const page = await browser.newPage();
+      
+      // 获取已有的页面，而不是创建新页面
+      const pages = await browser.pages();
+      const page = pages[0] || await browser.newPage();
 
+      // 检查浏览器是否已关闭
       const checkBrowserClosed = async () => {
+        // 如果浏览器已断开连接，则认为已关闭
         if (!browser.isConnected()) {
-          this.browsers.delete(browserType);
-          this.emit('browserClosed', browserType);
-          return;
+          this.browsers.delete(browserType); // 从浏览器实例映射中删除已关闭的浏览器
+          this.emit('browserClosed', browserType); // 发射浏览器已关闭的事件
+          return; // 结束函数执行
         }
+        // 获取当前浏览器的所有页面
         const pages = await browser.pages();
+        // 如果浏览器中没有任何页面，则认为已关闭
         if (pages.length === 0) {
-          this.browsers.delete(browserType);
-          this.emit('browserClosed', browserType);
+          // 关闭实例
+          await browser.close();
+          this.browsers.delete(browserType); // 从浏览器实例映射中删除已关闭的浏览器
+          this.emit('browserClosed', browserType); // 发射浏览器已关闭的事件
         }
       };
 

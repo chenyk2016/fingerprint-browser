@@ -1,9 +1,8 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
-const { spawn } = require('child_process');
 
 let mainWindow;
-let serverProcess;
+const isDev = process.env.NODE_ENV === 'development';
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -15,40 +14,30 @@ function createWindow() {
         }
     });
 
-    // 启动服务器进程
-    serverProcess = spawn('node', [path.join(__dirname, '../dist/server.js')], {
-        stdio: 'inherit'
-    });
+    // 加载应用
+    mainWindow.loadURL(`http://localhost:3003`);
 
-    // 等待服务器启动
-    setTimeout(() => {
-        mainWindow.loadURL('http://localhost:3000');
-    }, 2000);
+    // 开发环境下打开开发者工具
+    if (isDev) {
+        // mainWindow.webContents.openDevTools();
+    }
 
     mainWindow.on('closed', function () {
         mainWindow = null;
     });
 }
 
-app.on('ready', createWindow);
+// 等待应用就绪后创建窗口
+app.whenReady().then(createWindow);
 
 app.on('window-all-closed', function () {
     if (process.platform !== 'darwin') {
         app.quit();
-    }
-    if (serverProcess) {
-        serverProcess.kill();
     }
 });
 
 app.on('activate', function () {
     if (mainWindow === null) {
         createWindow();
-    }
-});
-
-app.on('before-quit', () => {
-    if (serverProcess) {
-        serverProcess.kill();
     }
 }); 

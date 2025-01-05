@@ -1,20 +1,11 @@
 const path = require('path');
-const { getSystemScreenSize } = require('../utils/system-info');
-
-// 获取系统屏幕尺寸
-const screenSize = getSystemScreenSize();
-console.log('系统屏幕尺寸:', screenSize);
-
 
 const browserConfigs = {
   chrome: {
     name: 'Chrome',
     options: {
       headless: false,
-      defaultViewport: {
-        width: screenSize.width,
-        height: screenSize.height - 100
-      },
+      defaultViewport: null,
       args: [
         '--disable-notifications',
         '--disable-blink-features=AutomationControlled',
@@ -33,12 +24,6 @@ const browserConfigs = {
         languages: ['zh-CN', 'zh', 'en-US'],
         hardwareConcurrency: 8,
         deviceMemory: 8,
-      },
-      screen: {
-        width: screenSize.width,
-        height: screenSize.height,
-        colorDepth: 24,
-        pixelDepth: 24,
       },
       webgl: {
         vendor: 'Google Inc. (NVIDIA)',
