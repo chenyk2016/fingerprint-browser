@@ -17,7 +17,6 @@
     "package:exe": "npm run build && electron-builder",
     "type-check": "tsc -P tsconfig.server.json --noEmit && tsc -P src/client/tsconfig.json --noEmit",
     "electron:preview": "npm run build && cross-env NODE_ENV=preview electron .",
-    "electron:start": "npm run server:build && concurrently \"node dist/server/server.js\" \"wait-on http://localhost:45813 && electron .\"",
     "electron:dev": "cross-env NODE_ENV=development concurrently \"npm run server:dev\" \"wait-on http://localhost:45813 && electron .\""
   },
   "dependencies": {
