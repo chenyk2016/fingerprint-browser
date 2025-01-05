@@ -71,3 +71,6 @@ temp/
 # Browser profiles
 profiles/ 
 dist-app/
+
+# 数据目录
+data/

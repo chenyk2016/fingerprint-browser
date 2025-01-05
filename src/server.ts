@@ -2,7 +2,6 @@ import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs/promises';
 import { createServer as createViteServer } from 'vite';
-import browserConfigs from './config/browser-config';
 import { BrowserManager } from './browsers/browser-manager';
 import { BrowserConfig } from './types/browser';
 import dotenv from 'dotenv';
@@ -59,8 +58,8 @@ async function loadSavedConfigs(): Promise<Record<string, BrowserConfig>> {
     const data = await fs.readFile(CONFIG_FILE_PATH, 'utf-8');
     return JSON.parse(data);
   } catch (error) {
-    console.log('No saved configs found, using default configs');
-    return { ...browserConfigs };
+    console.log('No saved configs found');
+    return {};
   }
 }
 
@@ -76,7 +75,7 @@ async function saveConfigs(configs: Record<string, BrowserConfig>): Promise<void
 
 async function createServer(): Promise<void> {
   const app = express();
-  const port = process.env.PORT || 3003;
+  const port = process.env.PORT || 45813;
   const isDev = process.env.NODE_ENV === 'development';
   
   // 确定项目根目录和客户端目录
