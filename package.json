@@ -1,6 +1,6 @@
 {
   "name": "multi-browser",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Multi-browser automation with Puppeteer",
   "main": "src/electron/main.js",
   "scripts": {

@@ -1,4 +1,4 @@
-# Seven-AI Browser Environment Manager
+# fingerprint-browser
 
 一个强大的多浏览器环境管理工具,专注于浏览器指纹管理、状态保存和反检测功能。
 
